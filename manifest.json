@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "RepoLens",
+  "version": "0.1.0",
+  "description": "See repository size directly on GitHub.",
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*/*"],
+      "js": ["src/content/index.ts"]
+    }
+  ]
+}
