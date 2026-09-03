@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "GitFootprint",
+  "version": "0.1.0",
+  "description": "See GitHub repository size and storage breakdown directly on GitHub.",
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
