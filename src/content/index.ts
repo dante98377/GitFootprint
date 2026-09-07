@@ -96,8 +96,8 @@ function injectStyles(): void {
 }
 
 function createSizeElement(
-    repositorySize: string,
-    currentFilesSize: string,
+    githubRepositorySize: string,
+    currentSnapshotSize: string,
     filesCount: number,
 ): HTMLDivElement {
     const element = document.createElement('div')
@@ -111,13 +111,13 @@ function createSizeElement(
         </div>
 
         <div class="gitfootprint-row">
-            <span>Repository size</span>
-            <strong>${repositorySize}</strong>
+            <span>Github Repository Size</span>
+            <strong>${githubRepositorySize}</strong>
         </div>
 
         <div class="gitfootprint-row">
-            <span>Current files</span>
-            <strong>${currentFilesSize}</strong>
+            <span>Current Snapshot Size</span>
+            <strong>${currentSnapshotSize}</strong>
         </div>
 
         <div class="gitfootprint-row">
@@ -179,14 +179,14 @@ async function main(): Promise<void> {
         item => item.type === 'blob',
     )
 
-    const currentFilesSize =
+    const githubRepositorySize =
         calculateTreeSize(tree)
 
     const filesCount = files.length
 
     console.log(
         'GitFootprint: current files size',
-        formatSize(currentFilesSize),
+        formatSize(githubRepositorySize),
     )
 
     console.log(
@@ -215,7 +215,7 @@ async function main(): Promise<void> {
 
     const element = createSizeElement(
         formatSize(data.size * 1024),
-        formatSize(currentFilesSize),
+        formatSize(githubRepositorySize),
         filesCount,
     )
 
