@@ -17,15 +17,10 @@ export interface GitHubTree {
 export async function getRepositoryTree(
     owner: string,
     repo: string,
-    treeSha: string,
-    recursive = false,
+    branch: string,
 ): Promise<GitHubTree> {
-    const recursiveQuery = recursive
-        ? '?recursive=1'
-        : ''
-
     const response = await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/git/trees/${treeSha}${recursiveQuery}`,
+        `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`,
         {
             headers: {
                 Accept: 'application/vnd.github+json',

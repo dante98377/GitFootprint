@@ -1,6 +1,4 @@
 import { getRepository } from '../github/repository'
-import { getBranchReference } from '../github/reference'
-import { getCommit } from '../github/commit'
 import { getRepositoryTree } from '../github/tree'
 
 function getRepositoryFromUrl(): {
@@ -8,7 +6,7 @@ function getRepositoryFromUrl(): {
     repo: string
 } | null {
     const match = location.pathname.match(
-        /^\/([^/]+)\/([^/]+)/,
+        /^\/([^/]+)\/([^/]+)/
     )
 
     if (!match) {
@@ -47,10 +45,102 @@ function calculateTreeSize(
         }, 0)
 }
 
+function injectStyles(): void {
+    if (document.querySelector('#gitfootprint-styles')) {
+        return
+    }
+
+    const style = document.createElement('style')
+
+    style.id = 'gitfootprint-styles'
+
+    style.textContent = `
+        .my-extension-element {
+            margin-bottom: 6px;
+            font-size: 12px;
+            color: var(--fgColor-default, #1f2328);
+        }
+
+        .gitfootprint-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .gitfootprint-icon {
+            font-size: 9px;
+        }
+
+        .gitfootprint-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 4px 0;
+        }
+
+        .gitfootprint-row span {
+            color: var(--fgColor-muted, #656d76);
+        }
+
+        .gitfootprint-row strong {
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+    `
+
+    document.head.appendChild(style)
+}
+
+function createSizeElement(
+    repositorySize: string,
+    currentFilesSize: string,
+    filesCount: number,
+): HTMLDivElement {
+    const element = document.createElement('div')
+
+    element.className = 'my-extension-element'
+
+    element.innerHTML = `
+        <div class="gitfootprint-header">
+            <span class="gitfootprint-icon">◉</span>
+            <span>GitFootprint</span>
+        </div>
+
+        <div class="gitfootprint-row">
+            <span>Repository size</span>
+            <strong>${repositorySize}</strong>
+        </div>
+
+        <div class="gitfootprint-row">
+            <span>Current files</span>
+            <strong>${currentFilesSize}</strong>
+        </div>
+
+        <div class="gitfootprint-row">
+            <span>Files</span>
+            <strong>${filesCount.toLocaleString()}</strong>
+        </div>
+    `
+
+    return element
+}
+
 async function main(): Promise<void> {
     const repository = getRepositoryFromUrl()
 
     if (!repository) {
+        return
+    }
+
+    if (
+        document.querySelector(
+            '.my-extension-element',
+        )
+    ) {
         return
     }
 
@@ -69,45 +159,39 @@ async function main(): Promise<void> {
         data,
     )
 
-    const reference = await getBranchReference(
-        repository.owner,
-        repository.repo,
-        data.default_branch,
-    )
-
-    console.log(
-        'GitFootprint: branch reference',
-        reference,
-    )
-
-    const commit = await getCommit(
-        repository.owner,
-        repository.repo,
-        reference.object.sha,
-    )
-
-    console.log(
-        'GitFootprint: commit',
-        commit,
-    )
-
-    const tree = await getRepositoryTree(
-        repository.owner,
-        repository.repo,
-        commit.tree.sha,
-        true,
-    )
+   const tree = await getRepositoryTree(
+    repository.owner,
+    repository.repo,
+    data.default_branch,
+)
 
     console.log(
         'GitFootprint: tree',
         tree,
     )
 
-    const currentFilesSize = calculateTreeSize(tree)
+    console.log(
+        'GitFootprint: truncated',
+        tree.truncated,
+    )
+
+    const files = tree.tree.filter(
+        item => item.type === 'blob',
+    )
+
+    const currentFilesSize =
+        calculateTreeSize(tree)
+
+    const filesCount = files.length
 
     console.log(
         'GitFootprint: current files size',
         formatSize(currentFilesSize),
+    )
+
+    console.log(
+        'GitFootprint: files count',
+        filesCount,
     )
 
     const about = [
@@ -127,24 +211,15 @@ async function main(): Promise<void> {
         return
     }
 
-    if (
-        document.querySelector(
-            '.my-extension-element',
-        )
-    ) {
-        return
-    }
+    injectStyles()
 
-    const myDiv = document.createElement('div')
+    const element = createSizeElement(
+        formatSize(data.size * 1024),
+        formatSize(currentFilesSize),
+        filesCount,
+    )
 
-    myDiv.className =
-        'my-extension-element'
-
-    myDiv.innerText =
-        `Repository size: ${formatSize(data.size * 1024)}\n` +
-        `Current files: ${formatSize(currentFilesSize)}`
-
-    about.parentElement?.after(myDiv)
+    about.parentElement?.after(element)
 }
 
 main().catch(error => {
