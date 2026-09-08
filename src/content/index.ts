@@ -1,5 +1,5 @@
 import { getRepository } from '../github/repository'
-import { getRepositoryTree } from '../github/tree'
+import { getCompleteRepositoryTree } from '../github/tree'
 
 function getRepositoryFromUrl(): {
     owner: string
@@ -35,8 +35,10 @@ function formatSize(bytes: number): string {
     return `${(bytes / 1024 ** 3).toFixed(1)} GB`
 }
 
-function calculateTreeSize(
-    tree: Awaited<ReturnType<typeof getRepositoryTree>>,
+function calculateSnapshotSize(
+    tree: Awaited<
+        ReturnType<typeof getCompleteRepositoryTree>
+    >,
 ): number {
     return tree.tree
         .filter(item => item.type === 'blob')
@@ -90,6 +92,12 @@ function injectStyles(): void {
             font-weight: 500;
             font-variant-numeric: tabular-nums;
         }
+
+        .gitfootprint-warning {
+            margin-top: 6px;
+            color: var(--fgColor-muted, #656d76);
+            font-size: 11px;
+        }
     `
 
     document.head.appendChild(style)
@@ -99,6 +107,7 @@ function createSizeElement(
     githubRepositorySize: string,
     currentSnapshotSize: string,
     filesCount: number,
+    truncated: boolean,
 ): HTMLDivElement {
     const element = document.createElement('div')
 
@@ -111,7 +120,7 @@ function createSizeElement(
         </div>
 
         <div class="gitfootprint-row">
-            <span>Github Repository Size</span>
+            <span>GitHub Repository Size</span>
             <strong>${githubRepositorySize}</strong>
         </div>
 
@@ -124,6 +133,17 @@ function createSizeElement(
             <span>Files</span>
             <strong>${filesCount.toLocaleString()}</strong>
         </div>
+
+        ${
+            truncated
+                ? `
+                    <div class="gitfootprint-warning">
+                        Repository is too large to analyze completely.
+                        Values may be incomplete.
+                    </div>
+                `
+                : ''
+        }
     `
 
     return element
@@ -159,40 +179,47 @@ async function main(): Promise<void> {
         data,
     )
 
-   const tree = await getRepositoryTree(
-    repository.owner,
-    repository.repo,
-    data.default_branch,
-)
+    const tree = await getCompleteRepositoryTree(
+        repository.owner,
+        repository.repo,
+        data.default_branch,
+    )
 
     console.log(
         'GitFootprint: tree',
         tree,
     )
 
-    console.log(
-        'GitFootprint: truncated',
-        tree.truncated,
-    )
-
     const files = tree.tree.filter(
         item => item.type === 'blob',
     )
 
-    const githubRepositorySize =
-        calculateTreeSize(tree)
+    const currentSnapshotSize =
+        calculateSnapshotSize(tree)
 
     const filesCount = files.length
 
     console.log(
-        'GitFootprint: current files size',
-        formatSize(githubRepositorySize),
+        'GitFootprint: current snapshot size',
+        formatSize(currentSnapshotSize),
     )
 
     console.log(
         'GitFootprint: files count',
         filesCount,
     )
+
+    if (tree.truncated) {
+        console.warn(
+            'GitFootprint: repository tree is incomplete',
+            {
+                files: filesCount,
+                snapshotSize: formatSize(
+                    currentSnapshotSize,
+                ),
+            },
+        )
+    }
 
     const about = [
         ...document.querySelectorAll(
@@ -215,8 +242,9 @@ async function main(): Promise<void> {
 
     const element = createSizeElement(
         formatSize(data.size * 1024),
-        formatSize(githubRepositorySize),
+        formatSize(currentSnapshotSize),
         filesCount,
+        tree.truncated,
     )
 
     about.parentElement?.after(element)

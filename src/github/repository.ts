@@ -1,3 +1,5 @@
+import { githubFetch } from './api'
+
 export interface GitHubRepository {
     name: string
     full_name: string
@@ -9,20 +11,9 @@ export async function getRepository(
     owner: string,
     repo: string,
 ): Promise<GitHubRepository> {
-    const response = await fetch(
+    const response = await githubFetch(
         `https://api.github.com/repos/${owner}/${repo}`,
-        {
-            headers: {
-                Accept: 'application/vnd.github+json',
-            },
-        },
     )
-
-    if (!response.ok) {
-        throw new Error(
-            `GitHub API error: ${response.status}`,
-        )
-    }
 
     return response.json()
 }
