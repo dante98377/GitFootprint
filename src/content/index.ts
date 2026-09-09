@@ -1,5 +1,6 @@
 import { getRepository } from '../github/repository'
 import { getCompleteRepositoryTree } from '../github/tree'
+import {getLargestFiles, type LargestFile,} from '../analysis/largest-files'
 
 function getRepositoryFromUrl(): {
     owner: string
@@ -98,6 +99,23 @@ function injectStyles(): void {
             color: var(--fgColor-muted, #656d76);
             font-size: 11px;
         }
+
+        .gitfootprint-largest {
+            margin-top: 10px;
+        }
+
+        .gitfootprint-section-title {
+            margin-bottom: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--fgColor-default, #1f2328);
+        }
+
+        .gitfootprint-largest .gitfootprint-row span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
     `
 
     document.head.appendChild(style)
@@ -108,6 +126,7 @@ function createSizeElement(
     currentSnapshotSize: string,
     filesCount: number,
     truncated: boolean,
+    largestFiles: LargestFile[],
 ): HTMLDivElement {
     const element = document.createElement('div')
 
@@ -132,6 +151,27 @@ function createSizeElement(
         <div class="gitfootprint-row">
             <span>Files</span>
             <strong>${filesCount.toLocaleString()}</strong>
+        </div>
+
+        <div class="gitfootprint-largest">
+            <div class="gitfootprint-section-title">
+                Largest files
+            </div>
+
+            ${largestFiles
+                .map(
+                    file => `
+                        <div class="gitfootprint-row">
+                            <span title="${file.path}">
+                                ${file.path}
+                            </span>
+                            <strong>
+                                ${formatSize(file.size)}
+                            </strong>
+                        </div>
+                    `,
+                )
+                .join('')}
         </div>
 
         ${
@@ -194,10 +234,20 @@ async function main(): Promise<void> {
         item => item.type === 'blob',
     )
 
+    const largestFiles = getLargestFiles(
+        files,
+        5,
+    )
+
     const currentSnapshotSize =
         calculateSnapshotSize(tree)
 
     const filesCount = files.length
+
+    console.log(
+        'GitFootprint: largest files',
+        largestFiles,
+    )
 
     console.log(
         'GitFootprint: current snapshot size',
@@ -245,6 +295,7 @@ async function main(): Promise<void> {
         formatSize(currentSnapshotSize),
         filesCount,
         tree.truncated,
+        largestFiles,
     )
 
     about.parentElement?.after(element)
