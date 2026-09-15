@@ -3,6 +3,9 @@
   "name": "GitFootprint",
   "version": "0.1.0",
   "description": "See GitHub repository size and storage breakdown directly on GitHub.",
+  "permissions": [
+    "storage"
+  ],
   "content_scripts": [
     {
       "matches": ["https://github.com/*/*"],

@@ -1,6 +1,15 @@
 import { getRepository } from '../github/repository'
 import { getCompleteRepositoryTree } from '../github/tree'
-import {getLargestFiles, type LargestFile,} from '../analysis/largest-files'
+
+import {
+    getLargestFiles,
+    type LargestFile,
+} from '../analysis/largest-files'
+
+import {
+    getCachedRepositoryAnalysis,
+    setCachedRepositoryAnalysis,
+} from '../cache/repository-cache'
 
 function getRepositoryFromUrl(): {
     owner: string
@@ -20,48 +29,77 @@ function getRepositoryFromUrl(): {
     }
 }
 
-function formatSize(bytes: number): string {
+function formatSize(
+    bytes: number,
+): string {
     if (bytes < 1024) {
         return `${bytes} B`
     }
 
     if (bytes < 1024 ** 2) {
-        return `${(bytes / 1024).toFixed(1)} KB`
+        return `${(
+            bytes / 1024
+        ).toFixed(1)} KB`
     }
 
     if (bytes < 1024 ** 3) {
-        return `${(bytes / 1024 ** 2).toFixed(1)} MB`
+        return `${(
+            bytes / 1024 ** 2
+        ).toFixed(1)} MB`
     }
 
-    return `${(bytes / 1024 ** 3).toFixed(1)} GB`
+    return `${(
+        bytes / 1024 ** 3
+    ).toFixed(1)} GB`
 }
 
 function calculateSnapshotSize(
     tree: Awaited<
-        ReturnType<typeof getCompleteRepositoryTree>
+        ReturnType<
+            typeof getCompleteRepositoryTree
+        >
     >,
 ): number {
     return tree.tree
-        .filter(item => item.type === 'blob')
-        .reduce((total, item) => {
-            return total + (item.size ?? 0)
-        }, 0)
+        .filter(
+            item => item.type === 'blob',
+        )
+        .reduce(
+            (total, item) => {
+                return (
+                    total +
+                    (item.size ?? 0)
+                )
+            },
+            0,
+        )
 }
 
 function injectStyles(): void {
-    if (document.querySelector('#gitfootprint-styles')) {
+    if (
+        document.querySelector(
+            '#gitfootprint-styles',
+        )
+    ) {
         return
     }
 
-    const style = document.createElement('style')
+    const style =
+        document.createElement(
+            'style',
+        )
 
-    style.id = 'gitfootprint-styles'
+    style.id =
+        'gitfootprint-styles'
 
     style.textContent = `
-        .my-extension-element {
+        .gitfootprint {
             margin-bottom: 6px;
             font-size: 12px;
-            color: var(--fgColor-default, #1f2328);
+            color: var(
+                --fgColor-default,
+                #1f2328
+            );
         }
 
         .gitfootprint-header {
@@ -86,7 +124,10 @@ function injectStyles(): void {
         }
 
         .gitfootprint-row span {
-            color: var(--fgColor-muted, #656d76);
+            color: var(
+                --fgColor-muted,
+                #656d76
+            );
         }
 
         .gitfootprint-row strong {
@@ -96,7 +137,10 @@ function injectStyles(): void {
 
         .gitfootprint-warning {
             margin-top: 6px;
-            color: var(--fgColor-muted, #656d76);
+            color: var(
+                --fgColor-muted,
+                #656d76
+            );
             font-size: 11px;
         }
 
@@ -108,10 +152,14 @@ function injectStyles(): void {
             margin-bottom: 4px;
             font-size: 11px;
             font-weight: 600;
-            color: var(--fgColor-default, #1f2328);
+            color: var(
+                --fgColor-default,
+                #1f2328
+            );
         }
 
-        .gitfootprint-largest .gitfootprint-row span {
+        .gitfootprint-largest
+        .gitfootprint-row span {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -128,29 +176,53 @@ function createSizeElement(
     truncated: boolean,
     largestFiles: LargestFile[],
 ): HTMLDivElement {
-    const element = document.createElement('div')
+    const element =
+        document.createElement(
+            'div',
+        )
 
-    element.className = 'my-extension-element'
+    element.className =
+        'gitfootprint'
 
     element.innerHTML = `
         <div class="gitfootprint-header">
-            <span class="gitfootprint-icon">◉</span>
-            <span>GitFootprint</span>
+            <span class="gitfootprint-icon">
+                ◉
+            </span>
+
+            <span>
+                GitFootprint
+            </span>
         </div>
 
         <div class="gitfootprint-row">
-            <span>GitHub Repository Size</span>
-            <strong>${githubRepositorySize}</strong>
+            <span>
+                GitHub Repository Size
+            </span>
+
+            <strong>
+                ${githubRepositorySize}
+            </strong>
         </div>
 
         <div class="gitfootprint-row">
-            <span>Current Snapshot Size</span>
-            <strong>${currentSnapshotSize}</strong>
+            <span>
+                Current Snapshot Size
+            </span>
+
+            <strong>
+                ${currentSnapshotSize}
+            </strong>
         </div>
 
         <div class="gitfootprint-row">
-            <span>Files</span>
-            <strong>${filesCount.toLocaleString()}</strong>
+            <span>
+                Files
+            </span>
+
+            <strong>
+                ${filesCount.toLocaleString()}
+            </strong>
         </div>
 
         <div class="gitfootprint-largest">
@@ -165,8 +237,11 @@ function createSizeElement(
                             <span title="${file.path}">
                                 ${file.path}
                             </span>
+
                             <strong>
-                                ${formatSize(file.size)}
+                                ${formatSize(
+                                    file.size,
+                                )}
                             </strong>
                         </div>
                     `,
@@ -178,7 +253,8 @@ function createSizeElement(
             truncated
                 ? `
                     <div class="gitfootprint-warning">
-                        Repository is too large to analyze completely.
+                        Repository is too large
+                        to analyze completely.
                         Values may be incomplete.
                     </div>
                 `
@@ -190,7 +266,8 @@ function createSizeElement(
 }
 
 async function main(): Promise<void> {
-    const repository = getRepositoryFromUrl()
+    const repository =
+        getRepositoryFromUrl()
 
     if (!repository) {
         return
@@ -198,77 +275,119 @@ async function main(): Promise<void> {
 
     if (
         document.querySelector(
-            '.my-extension-element',
+            '.gitfootprint',
         )
     ) {
         return
     }
 
-    console.log(
-        'GitFootprint: repository',
-        repository,
-    )
-
-    const data = await getRepository(
-        repository.owner,
-        repository.repo,
-    )
-
-    console.log(
-        'GitFootprint: repository data',
-        data,
-    )
-
-    const tree = await getCompleteRepositoryTree(
-        repository.owner,
-        repository.repo,
-        data.default_branch,
-    )
-
-    console.log(
-        'GitFootprint: tree',
-        tree,
-    )
-
-    const files = tree.tree.filter(
-        item => item.type === 'blob',
-    )
-
-    const largestFiles = getLargestFiles(
-        files,
-        5,
-    )
-
-    const currentSnapshotSize =
-        calculateSnapshotSize(tree)
-
-    const filesCount = files.length
-
-    console.log(
-        'GitFootprint: largest files',
-        largestFiles,
-    )
-
-    console.log(
-        'GitFootprint: current snapshot size',
-        formatSize(currentSnapshotSize),
-    )
-
-    console.log(
-        'GitFootprint: files count',
-        filesCount,
-    )
-
-    if (tree.truncated) {
-        console.warn(
-            'GitFootprint: repository tree is incomplete',
-            {
-                files: filesCount,
-                snapshotSize: formatSize(
-                    currentSnapshotSize,
-                ),
-            },
+    const cached =
+        await getCachedRepositoryAnalysis(
+            repository.owner,
+            repository.repo,
         )
+
+    let githubRepositorySize: number
+    let currentSnapshotSize: number
+    let filesCount: number
+    let largestFiles: LargestFile[]
+    let truncated: boolean
+
+    if (cached) {
+        githubRepositorySize =
+            cached.githubRepositorySize
+
+        currentSnapshotSize =
+            cached.currentSnapshotSize
+
+        filesCount =
+            cached.filesCount
+
+        largestFiles =
+            cached.largestFiles
+
+        truncated = false
+    } else {
+        const data =
+            await getRepository(
+                repository.owner,
+                repository.repo,
+            )
+
+        const tree =
+            await getCompleteRepositoryTree(
+                repository.owner,
+                repository.repo,
+                data.default_branch,
+            )
+
+        const files =
+            tree.tree.filter(
+                item =>
+                    item.type === 'blob',
+            )
+
+        largestFiles =
+            getLargestFiles(
+                files,
+                5,
+            )
+
+        currentSnapshotSize =
+            calculateSnapshotSize(
+                tree,
+            )
+
+        filesCount =
+            files.length
+
+        githubRepositorySize =
+            data.size * 1024
+
+        truncated =
+            tree.truncated
+
+        if (tree.truncated) {
+            console.warn(
+                'GitFootprint: repository tree is incomplete',
+                {
+                    files: filesCount,
+                    snapshotSize:
+                        formatSize(
+                            currentSnapshotSize,
+                        ),
+                },
+            )
+        }
+
+        if (!tree.truncated) {
+            await setCachedRepositoryAnalysis(
+                {
+                    owner:
+                        repository.owner,
+
+                    repo:
+                        repository.repo,
+
+                    branch:
+                        data.default_branch,
+
+                    treeSha:
+                        tree.sha,
+
+                    githubRepositorySize,
+
+                    currentSnapshotSize,
+
+                    filesCount,
+
+                    largestFiles,
+
+                    cachedAt:
+                        Date.now(),
+                },
+            )
+        }
     }
 
     const about = [
@@ -277,28 +396,32 @@ async function main(): Promise<void> {
         ),
     ].find(
         element =>
-            element.textContent?.trim() === 'About',
+            element.textContent?.trim() ===
+            'About',
     )
 
     if (!about) {
-        console.log(
-            'GitFootprint: About section not found',
-        )
-
         return
     }
 
     injectStyles()
 
-    const element = createSizeElement(
-        formatSize(data.size * 1024),
-        formatSize(currentSnapshotSize),
-        filesCount,
-        tree.truncated,
-        largestFiles,
-    )
+    const element =
+        createSizeElement(
+            formatSize(
+                githubRepositorySize,
+            ),
+            formatSize(
+                currentSnapshotSize,
+            ),
+            filesCount,
+            truncated,
+            largestFiles,
+        )
 
-    about.parentElement?.after(element)
+    about.parentElement?.after(
+        element,
+    )
 }
 
 main().catch(error => {

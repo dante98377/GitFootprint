@@ -66,10 +66,6 @@ export async function getCompleteRepositoryTree(
         return tree
     }
 
-    console.log(
-        'GitFootprint: tree is truncated, starting manual traversal',
-    )
-
     const rootTree = await getTree(
         owner,
         repo,
@@ -95,15 +91,6 @@ export async function getCompleteRepositoryTree(
         }
 
         if (treeRequests >= MAX_TREE_REQUESTS) {
-            console.log(
-                'GitFootprint: manual traversal limit reached',
-                {
-                    maxTreeRequests: MAX_TREE_REQUESTS,
-                    treeRequests,
-                    files: files.length,
-                },
-            )
-
             return {
                 ...rootTree,
                 tree: files,
@@ -114,18 +101,12 @@ export async function getCompleteRepositoryTree(
         visited.add(treeSha)
 
         if (treeRequests > 0) {
-            await delay(TREE_REQUEST_DELAY)
+            await delay(
+                TREE_REQUEST_DELAY,
+            )
         }
 
         treeRequests++
-
-        console.log(
-            'GitFootprint: processing tree',
-            {
-                treeSha,
-                treeRequests,
-            },
-        )
 
         const currentTree = await getTree(
             owner,
@@ -145,15 +126,6 @@ export async function getCompleteRepositoryTree(
             }
         }
     }
-
-    console.log(
-        'GitFootprint: manual traversal completed',
-        {
-            treeRequests,
-            trees: visited.size,
-            files: files.length,
-        },
-    )
 
     return {
         ...rootTree,
