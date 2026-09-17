@@ -266,6 +266,34 @@ function createSizeElement(
 }
 
 async function main(): Promise<void> {
+    const about = [
+            ...document.querySelectorAll(
+                'h2[data-component="Heading"]',
+            ),
+        ].find(
+            element =>
+                element.textContent?.trim() ===
+                'About',
+        )
+
+        if (!about) {
+            return
+        }
+
+    injectStyles()
+
+    const load =
+        document.createElement(
+            'div',
+        )
+
+    load.className =
+        'gitfootprint_load'
+
+    load.textContent = 'Loading...'
+
+    about.parentElement?.after(load)
+
     const repository =
         getRepositoryFromUrl()
 
@@ -390,22 +418,6 @@ async function main(): Promise<void> {
         }
     }
 
-    const about = [
-        ...document.querySelectorAll(
-            'h2[data-component="Heading"]',
-        ),
-    ].find(
-        element =>
-            element.textContent?.trim() ===
-            'About',
-    )
-
-    if (!about) {
-        return
-    }
-
-    injectStyles()
-
     const element =
         createSizeElement(
             formatSize(
@@ -419,9 +431,7 @@ async function main(): Promise<void> {
             largestFiles,
         )
 
-    about.parentElement?.after(
-        element,
-    )
+    load.replaceWith(element)
 }
 
 main().catch(error => {
