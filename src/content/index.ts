@@ -1,5 +1,6 @@
 import { getRepository } from '../github/repository'
 import { getCompleteRepositoryTree } from '../github/tree'
+import { getGitHubToken, setGitHubToken, removeGitHubToken } from '../auth/github-token'
 
 import {
     getLargestFiles,
