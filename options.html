@@ -1,0 +1,63 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>GitFootprint Options</title>
+</head>
+
+<body>
+    <main>
+        <h1>GitFootprint</h1>
+
+        <section>
+            <h2>GitHub API</h2>
+
+            <p>
+                Configure a GitHub personal access token
+                to increase GitHub API rate limits.
+            </p>
+
+            <label for="github-token">
+                GitHub token
+            </label>
+
+            <input
+                id="github-token"
+                type="password"
+                autocomplete="off"
+                placeholder="ghp_..."
+            >
+
+            <div>
+                <button
+                    id="save-token"
+                    type="button"
+                >
+                    Save token
+                </button>
+
+                <button
+                    id="remove-token"
+                    type="button"
+                >
+                    Remove token
+                </button>
+            </div>
+
+            <p id="status"></p>
+        </section>
+    </main>
+
+    <script
+        type="module"
+        src="/src/options/index.ts"
+    ></script>
+</body>
+</html>

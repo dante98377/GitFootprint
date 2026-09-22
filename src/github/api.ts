@@ -1,10 +1,20 @@
+import { getGitHubToken } from './github-token'
+
 export async function githubFetch(
     url: string,
 ): Promise<Response> {
+    const token = await getGitHubToken()
+
+    const headers: HeadersInit = {
+        Accept: 'application/vnd.github+json',
+    }
+
+    if (token !== null) {
+        headers.Authorization = `Bearer ${token}`
+    }
+
     const response = await fetch(url, {
-        headers: {
-            Accept: 'application/vnd.github+json',
-        },
+        headers,
     })
 
     if (!response.ok) {
@@ -13,10 +23,13 @@ export async function githubFetch(
         let message = 'Unknown error'
 
         try {
-            const data = JSON.parse(body)
+            const json = JSON.parse(body)
 
-            if (typeof data.message === 'string') {
-                message = data.message
+            if (
+                typeof json.message ===
+                'string'
+            ) {
+                message = json.message
             }
         } catch {
             if (body) {

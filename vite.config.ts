@@ -6,16 +6,28 @@ export default defineConfig({
         emptyOutDir: true,
 
         rollupOptions: {
-            input: resolve(
-                process.cwd(),
-                'src/content/index.ts',
-            ),
+            input: {
+                content: resolve(
+                    process.cwd(),
+                    'src/content/index.ts',
+                ),
+
+                options: resolve(
+                    process.cwd(),
+                    'options.html',
+                ),
+            },
 
             output: {
-                entryFileNames:
-                    'content.js',
+                entryFileNames: chunk => {
+                    if (chunk.name === 'content') {
+                        return 'content.js'
+                    }
 
-                format: 'iife',
+                    return 'assets/[name]-[hash].js'
+                },
+
+                chunkFileNames: 'assets/[name]-[hash].js',
             },
         },
     },
